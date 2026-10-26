@@ -136,22 +136,19 @@ public class ExpoCrispSdkModule: Module {
     // MARK: - UI
 
     Function("show") {
-      DispatchQueue.main.async {
-        guard let viewController = self.findTopViewController() else { return }
-        viewController.present(ChatViewController(), animated: true)
-      }
+      CrispChatPresenter.present(.lastActiveTab)
     }
 
     Function("openChat") {
-      CrispSDK.openChat()
+      CrispChatPresenter.present(.chat)
     }
 
     Function("searchHelpdesk") {
-      CrispSDK.searchHelpdesk()
+      CrispChatPresenter.present(.helpdeskSearch)
     }
 
     Function("openHelpdeskArticle") { (id: String, locale: String, title: String?, category: String?) in
-      CrispSDK.openHelpdeskArticle(locale: locale, slug: id, title: title, category: category)
+      CrispChatPresenter.present(.helpdeskArticle(locale: locale, slug: id, title: title, category: category))
     }
 
     Function("runBotScenario") { (scenarioId: String) in
@@ -248,34 +245,6 @@ public class ExpoCrispSdkModule: Module {
     case 9: return .black
     default: return .black
     }
-  }
-
-  private func findRootViewController() -> UIViewController? {
-    if #available(iOS 15.0, *) {
-      return UIApplication.shared.connectedScenes
-        .compactMap { $0 as? UIWindowScene }
-        .flatMap { $0.windows }
-        .first { $0.isKeyWindow }?
-        .rootViewController
-    } else {
-      return UIApplication.shared.windows.first?.rootViewController
-    }
-  }
-
-  /// Returns the top-most view controller of the key window, walking the
-  /// `presentedViewController` chain so the chatbox can be presented even when
-  /// another modal is already on screen (presenting on the root view controller
-  /// is refused by UIKit in that case). Returns `nil` if a chatbox is already
-  /// anywhere in the chain or if the top-most controller is mid-transition.
-  private func findTopViewController() -> UIViewController? {
-    guard var topViewController = findRootViewController() else { return nil }
-    if topViewController is ChatViewController { return nil }
-    while let presented = topViewController.presentedViewController {
-      if presented is ChatViewController { return nil }
-      topViewController = presented
-    }
-    guard !topViewController.isBeingPresented, !topViewController.isBeingDismissed else { return nil }
-    return topViewController
   }
 
   private func setupCallbacks() {
